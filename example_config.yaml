@@ -1,0 +1,40 @@
+# running: endless loop, stops immediately on SIGTERM
+endless-loop:
+  command: "while true; do echo working...; sleep 1; done"
+
+# idle: prints its working directory and finishes with exit code 0
+one-shot:
+  directory: "/tmp"
+  command: "pwd"
+
+# error: fails right away with exit code 3
+fail-on-start:
+  command: "sh -c 'echo something went wrong; exit 3'"
+
+# error: command not found, the shell exits with code 127
+missing-command:
+  command: "does-not-exist"
+
+# running -> error: crashes with exit code 1 after 10 seconds
+crash-after-10s:
+  command: "sh -c 'echo working...; sleep 10; echo crashed; exit 1'"
+
+# running -> error (signal): kills itself with SIGKILL after 5 seconds
+self-kill-after-5s:
+  command: "sh -c 'echo working...; sleep 5; kill -KILL $$'"
+
+# interactive: echoes every line typed into it (attach and type)
+console:
+  command: "sh -c 'while read line; do echo \"got: $line\"; done'"
+
+# graceful stop: needs 3 seconds to shut down on SIGTERM/SIGINT
+slow-shutdown:
+  command: >-
+    bash -c 'trap "echo stopping...; sleep 3; echo bye; exit 0" INT TERM;
+    while true; do echo working...; sleep 1; done'
+
+# stubborn: ignores SIGTERM, gets SIGKILLed after the stop timeout
+ignore-sigterm:
+  command: >-
+    bash -c 'trap "echo ignoring SIGTERM" TERM;
+    while true; do echo working...; sleep 1; done'

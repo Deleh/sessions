@@ -1,0 +1,13 @@
+[project]
+name = "sessions"
+version = "0.1.0"
+description = "Start or stop multiple tmux sessions"
+requires-python = ">=3.11"
+dependencies = ["libtmux>=0.61", "pyyaml"]
+
+[project.scripts]
+sessions = "sessions:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

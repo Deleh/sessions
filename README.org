@@ -1,0 +1,123 @@
+#+title: sessions
+
+/sessions/ runs configured commands in detached tmux sessions.
+
+#+begin_example
+  $ sessions list
+  hytale      ● running
+  hytale-map  ● idle
+  luanti      ● running
+  backup      ● error (exit 2)
+  dev-server  ○ stopped
+
+  $ sessions restart hytale dev
+  hytale      ● running
+  dev-server  ● running  was not running
+#+end_example
+
+* Usage
+
+#+begin_example
+  usage: sessions [-h] [--sessions-config SESSIONS_CONFIG] {ls,list,start,restart,stop} [sessions ...]
+
+  Run configured commands in detached tmux sessions.
+
+  positional arguments:
+    {ls,list,start,restart,stop}
+                          Sessions command
+    sessions              Session names or prefixes (default: all configured)
+
+  options:
+    -h, --help            show this help message and exit
+    --sessions-config, -c SESSIONS_CONFIG
+                          Path to sessions config (default ~/.config/sessions.yaml)
+#+end_example
+
+Each =sessions= argument selects the session with exactly this name, or all sessions starting with it if none matches exactly.
+
+** Commands
+
+| Command       | Description                                               |
+|---------------+-----------------------------------------------------------|
+| =ls= / =list= | Shows all configured sessions and their current state     |
+| =start=       | Creates missing sessions and restarts idle or failed ones |
+| =stop=        | Sends =SIGTERM=, waits up to 30s, then sends =SIGKILL=    |
+| =restart=     | First =stop=, then =start=                                |
+
+Sessions can be observed via =tmux=:
+- =tmux attach -t <session_name>= to attach to a running session
+- =Ctrl-b d= to detach from a running session
+
+** States
+
+| State       | Description                                                      |
+|-------------+------------------------------------------------------------------|
+| =running=   | Command is running                                               |
+| =idle=      | Command finished with exit code =0=                              |
+| =error=     | Command failed with an exit code or was killed by a signal       |
+| =stopped=   | No tmux session exists                                           |
+| =unmanaged= | Session wasn't created by /sessions/, =start= and =stop= skip it |
+
+* Installation
+** Requirements
+
+- =tmux=
+- =Python= 3.11 or newer (only without Nix)
+
+** Nix
+
+Try without installing:
+#+begin_src sh
+  nix shell github:Deleh/sessions
+#+end_src
+
+Add it to your profile:
+#+begin_src sh
+  nix profile add github:Deleh/sessions
+#+end_src
+
+Install on NixOS managed with flakes:
+#+begin_src nix
+  inputs.sessions.url = "github:Deleh/sessions";
+
+  # ...
+
+  environment.systemPackages = [
+    inputs.sessions.packages.${pkgs.stdenv.hostPlatform.system}.default
+  ];
+#+end_src
+
+** Without Nix
+
+#+begin_src sh
+  uv tool install git+https://github.com/Deleh/sessions
+  # or
+  pipx install git+https://github.com/Deleh/sessions
+#+end_src
+
+* Config
+
+The following snippet shows two configured sessions:
+#+begin_src yaml
+  hytale:
+    directory: "~/games/hytale"
+    command: "./start-server.sh"
+
+  backup:
+    command: "restic backup ~/documents"
+#+end_src
+
+Notes:
+- Each top-level key defines a session
+- The =command= is mandatory
+- The =directory= is optional
+- =~= and =$VARS= are expanded in the =directory=
+- Session names can't contain =.= or =:=
+- If a session name appears twice, the last one wins
+
+An example config file with some edge cases for testing can be found in [[./example_config.yaml]].
+The default config path is =~/.config/sessions.yaml=.
+
+* Credits
+
+/sessions/ is basically a simple wrapper around [[https://libtmux.git-pull.com/][libtmux]].
